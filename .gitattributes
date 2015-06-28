@@ -1,0 +1,22 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Custom for MATLAB/Simulink
+*.m			diff=matlab
+*.mat		-crlf -diff -merge
+*.p			-crlf -diff -merge
+*.slx		-crlf -diff -merge
+*.mdl		-crlf -diff -merge
+
+
+# Standard to msysgit
+*.doc		diff=astextplain
+*.DOC		diff=astextplain
+*.docx		diff=astextplain
+*.DOCX		diff=astextplain
+*.dot		diff=astextplain
+*.DOT		diff=astextplain
+*.pdf		diff=astextplain
+*.PDF		diff=astextplain
+*.rtf		diff=astextplain
+*.RTF		diff=astextplain
