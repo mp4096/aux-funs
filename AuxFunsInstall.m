@@ -5,7 +5,6 @@ function AuxFunsInstall
 % Get the current path
 currPath = cd;
 
-
 % =========================================================================
 % Perform a very simple check if the current path is the right one
 % =========================================================================
@@ -23,5 +22,12 @@ end
 addpath(currPath);
 rehash;
 
-fprintf('aux-funs installed successfully! Enjoy!\n');
+try
+    savepath;
+    fprintf('aux-funs installed successfully! Enjoy!\n');
+catch
+    warning(['The updated MATLAB path could not be saved. ', ...
+        'This can happen if you do not have admin rights on this ', ...
+        'computer. aux-funs will be installed only for this session.']);
+end
 end
