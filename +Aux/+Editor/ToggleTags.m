@@ -48,6 +48,8 @@ if isempty(currDoc)
     fprintf('No files are currently opened in Editor.\n');
     return
 end
+% Store the current position within the document
+currPos = currDoc.Selection(1 : 2);
 
 % Do smart indent (removes whitespaces at the end of lines)
 currDoc.smartIndentContents;
@@ -173,5 +175,8 @@ edit(filename);
 currDoc = matlab.desktop.editor.getActive();
 currDoc.smartIndentContents;
 currDoc.save;
+
+% Go to the saved position
+currDoc.goToPositionInLine(currPos(1), currPos(2));
 % =========================================================================
 end
