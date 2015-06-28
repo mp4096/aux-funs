@@ -1,8 +1,10 @@
 function ToggleTags(varargin)
 % Toggles marked commented blocks in the active file opened in editor
 %
-% CAUTION: This functions performs smart indent (Ctrl+I) automatically! Be
+% CAUTION: This function performs smart indent (Ctrl+I) automatically! Be
 % careful if you indent your files manually.
+% WARNING: This function overwrites the currently opened file. So please
+% use it only if you have version control and do a backup regularly!
 %
 % Inputs:
 %   varargin  : an arbitrary number of tags, which are identified as
