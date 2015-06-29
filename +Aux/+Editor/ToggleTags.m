@@ -61,8 +61,8 @@ if isempty(currDoc.Text)
     return
 end
 
-% Check if the document can be saved, i.e. has a persistent location on the
-% system drive
+% Save the current document. Also checks if the document can be saved, i.e.
+% has a persistent location on the system drive
 try
     currDoc.save;
 catch
@@ -82,9 +82,6 @@ catch
         'The original file was not modified!']);
     return
 end
-
-% Store the current position within the document
-currPos = currDoc.Selection(1 : 2);
 % =========================================================================
 
 
@@ -201,18 +198,11 @@ end
 % Join the lines into a single string
 txt = strjoin(lines, char(10));
 
-% Store the filename before the active document is closed
-filename = currDoc.Filename;
-
-% Save and close the active document
-currDoc.save;
-currDoc.closeNoPrompt;
-
 % Open this file and dump the edited string into it (we may do this since a
 % backup was created previously)
 fID = [];
 try
-    fID = fopen(filename, 'w');
+    fID = fopen(currDoc.Filename, 'w');
     fwrite(fID, txt, 'char');
     fclose(fID);
 catch
@@ -227,12 +217,8 @@ end
 
 
 % =========================================================================
-% Open the file again
+% Reload the file
 % =========================================================================
-edit(filename);
-
-% Go to the saved position
-currDoc = matlab.desktop.editor.getActive;
-currDoc.goToPositionInLine(currPos(1), currPos(2));
+currDoc.reload;
 % =========================================================================
 end
