@@ -3,8 +3,9 @@ function ToggleTags(varargin)
 %
 % CAUTION: This function performs smart indent (Ctrl+I) automatically! Be
 % careful if you indent your files manually.
-% WARNING: This function overwrites the currently opened file. So please
-% use it only if you have version control and do a backup regularly!
+%
+% This function makes a .bak backup of the currently opened file and then
+% overwrites it. Nevertheless, please use source control.
 %
 % Inputs:
 %   varargin  : an arbitrary number of tags, which are identified as
@@ -158,6 +159,12 @@ filename = currDoc.Filename;
 % Save and close the active document
 currDoc.save;
 currDoc.closeNoPrompt;
+
+% Generate a filename for the backup, regexp .m$ matches .m at the end of
+% the string
+filenameNew = regexprep(filename, '.m$', '.bak');
+% Backup the active document
+movefile(filename, filenameNew);
 
 % Open this file and dump the edited string into it
 fID = fopen(filename, 'w');
