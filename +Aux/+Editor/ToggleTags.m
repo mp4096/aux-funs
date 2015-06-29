@@ -41,13 +41,19 @@ tagsClose = cellfun(@(s) ['% =>', s, '>='], tags, 'UniformOutput', false);
 
 
 % =========================================================================
-% Get the active document
+% Get the active document and perform checks
 % =========================================================================
 currDoc = matlab.desktop.editor.getActive;
 
 % Check if a document is opened in editor 
 if isempty(currDoc)
     fprintf('No files are currently opened in Editor.\n');
+    return
+end
+
+% Check if the opened document is a MATLAB function
+if ~strcmp(currDoc.Language, 'MATLAB')
+    fprintf('The active document is not a valid MATLAB file.\n');
     return
 end
 
