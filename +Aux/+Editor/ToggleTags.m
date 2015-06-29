@@ -1,9 +1,6 @@
 function ToggleTags(varargin)
 % Toggles marked commented blocks in the active file opened in editor
 %
-% CAUTION: This function performs smart indent (Ctrl+I) automatically! Be
-% careful if you indent your files manually.
-%
 % This function makes a .bak backup of the currently opened file and then
 % overwrites it. Nevertheless, please use source control.
 %
@@ -35,8 +32,8 @@ else
     end
 end
 
-tagsOpen  = cellfun(@(s) ['% =<', s, '<='], tags, 'UniformOutput', false);
-tagsClose = cellfun(@(s) ['% =>', s, '>='], tags, 'UniformOutput', false);
+tagsOpen  = cellfun(@(s) ['%=<', s, '<='], tags, 'UniformOutput', false);
+tagsClose = cellfun(@(s) ['%=>', s, '>='], tags, 'UniformOutput', false);
 % =========================================================================
 
 
@@ -81,9 +78,6 @@ end
 
 % Store the current position within the document
 currPos = currDoc.Selection(1 : 2);
-
-% Do smart indent (removes whitespaces at the end of lines)
-currDoc.smartIndentContents;
 % =========================================================================
 
 
@@ -91,12 +85,15 @@ currDoc.smartIndentContents;
 % Toggle comments
 % =========================================================================
 % Read the current document line by line
-% Notice: char(10) is equivalent to fprintf('\n')
-lines = textscan(currDoc.Text, '%s', 'Delimiter', char(10));
+% Notice: char(10) is equivalent to fprintf('\n') and all whitespaces are
+% preserved
+lines = textscan(currDoc.Text, '%s', ...
+    'Delimiter', char(10), 'whitespace', '');
 lines = reshape(lines{1}, 1, []);
 
 % No tag is active
 currTag = 0;
+currIndent = '';
 
 % Iterate only over non-empty lines
 nonEmptyIdx = find(cellfun(@isempty, lines) == 0);
@@ -106,9 +103,11 @@ for j = 1 : 1 : length(nonEmptyIdx)
     % =====================================================================
     % Detect tags
     % =====================================================================
-    % The line must be a perfect match to the opening or closing tag
-    idxOpenTag  = find(strcmp(lines{idx}, tagsOpen), 1);
-    idxCloseTag = find(strcmp(lines{idx}, tagsClose), 1);
+    % Apart from the whitespaces the current line must be a perfect match
+    % to the opening or closing tag
+    tagCompStr = strrep(lines{idx}, ' ', '');
+    idxOpenTag  = find(strcmp(tagCompStr, tagsOpen), 1);
+    idxCloseTag = find(strcmp(tagCompStr, tagsClose), 1);
     % If nothing found, set the tag index to zero
     if isempty(idxOpenTag)
         idxOpenTag  = 0;
@@ -129,6 +128,9 @@ for j = 1 : 1 : length(nonEmptyIdx)
         % If we were not within a toggling block and now see an opening
         % tag, set the current tag index to this new tag index
         currTag = idxOpenTag;
+        % Furthermore, remember the active indent width
+        currIndent = regexp(lines{idx}, '^( *)', 'match');
+        currIndent = currIndent{1};
     elseif (currTag > 0) && (idxOpenTag > 0)
         % If we were within a toggling block and now see a new opening
         % tag, this is nesting and it is not supported
@@ -141,6 +143,8 @@ for j = 1 : 1 : length(nonEmptyIdx)
         % closing tag, then the toggling block is over and we are in the
         % inactive environment
         currTag = 0;
+        % Also set the indent to zero
+        currIndent = '';
     elseif (currTag ~= idxCloseTag) && (idxCloseTag > 0)
         % If we are within some toggling block and now see a different
         % closing tag, then something is wrong
@@ -161,10 +165,11 @@ for j = 1 : 1 : length(nonEmptyIdx)
         
         if isempty(match0)
             % If no match, then the line is active and should be commented
-            lines{idx} = ['% ', lines{idx}];
+            lines{idx} = [currIndent, '% ', noLeadingWs];
         else
             % Else delete the comment symbol
             lines{idx}(match0(1) : match1(1)) = [];
+            lines{idx} = [currIndent, lines{idx}];
         end
     end
     % =====================================================================
@@ -216,17 +221,8 @@ end
 % =========================================================================
 edit(filename);
 
-% Do smart indentation
-currDoc = matlab.desktop.editor.getActive();
-currDoc.smartIndentContents;
-try
-    currDoc.save;
-catch
-    fprintf('Could not save current document.');
-    return
-end
-
 % Go to the saved position
+currDoc = matlab.desktop.editor.getActive;
 currDoc.goToPositionInLine(currPos(1), currPos(2));
 % =========================================================================
 end
