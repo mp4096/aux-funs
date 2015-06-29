@@ -9,6 +9,7 @@ function ToggleTags(varargin)
 %               '% =<`tagname`<=' and '% =>`tagname`>=' in the code.
 %               Default value is 'default'.
 
+
 % =========================================================================
 % Check input arguments and prepare the tags
 % =========================================================================
@@ -32,8 +33,8 @@ else
     end
 end
 
-tagsOpen  = cellfun(@(s) ['%=<', s, '<='], tags, 'UniformOutput', false);
-tagsClose = cellfun(@(s) ['%=>', s, '>='], tags, 'UniformOutput', false);
+tagsOpen  = cellfun(@(s) ['% =<', s, '<='], tags, 'UniformOutput', false);
+tagsClose = cellfun(@(s) ['% =>', s, '>='], tags, 'UniformOutput', false);
 % =========================================================================
 
 
@@ -51,6 +52,12 @@ end
 % Check if the opened document is a MATLAB function
 if ~strcmp(currDoc.Language, 'MATLAB')
     fprintf('The active document is not a valid MATLAB file.\n');
+    return
+end
+
+% Check if the opened document is empty
+if isempty(currDoc.Text)
+    fprintf('The active document is empty.\n');
     return
 end
 
@@ -87,8 +94,8 @@ currPos = currDoc.Selection(1 : 2);
 % Read the current document line by line
 % Notice: char(10) is equivalent to fprintf('\n') and all whitespaces are
 % preserved
-lines = textscan(currDoc.Text, '%s', ...
-    'Delimiter', char(10), 'whitespace', '');
+lines = textscan(currDoc.Text, ...
+    '%s', 'delimiter', char(10), 'whitespace', '');
 lines = reshape(lines{1}, 1, []);
 
 % No tag is active
@@ -105,7 +112,7 @@ for j = 1 : 1 : length(nonEmptyIdx)
     % =====================================================================
     % Apart from the whitespaces the current line must be a perfect match
     % to the opening or closing tag
-    tagCompStr = strrep(lines{idx}, ' ', '');
+    tagCompStr = strtrim(lines{idx});
     idxOpenTag  = find(strcmp(tagCompStr, tagsOpen), 1);
     idxCloseTag = find(strcmp(tagCompStr, tagsClose), 1);
     % If nothing found, set the tag index to zero
@@ -129,8 +136,12 @@ for j = 1 : 1 : length(nonEmptyIdx)
         % tag, set the current tag index to this new tag index
         currTag = idxOpenTag;
         % Furthermore, remember the active indent width
-        currIndent = regexp(lines{idx}, '^( *)', 'match');
-        currIndent = currIndent{1};
+        extractedIndent = regexp(lines{idx}, '^( *)', 'match');
+        if ~isempty(extractedIndent)
+            currIndent = extractedIndent{1};
+        else
+            currIndent = '';
+        end
     elseif (currTag > 0) && (idxOpenTag > 0)
         % If we were within a toggling block and now see a new opening
         % tag, this is nesting and it is not supported
@@ -162,6 +173,7 @@ for j = 1 : 1 : length(nonEmptyIdx)
         % Match to the regexp anchored to the string beginning and allowing
         % any number of whitespaces before and after the percent symbol
         [match0, match1] = regexp(lines{idx}, '(^( *)%( *))');
+        noLeadingWs = strtrim(lines{idx});
         
         if isempty(match0)
             % If no match, then the line is active and should be commented
@@ -206,11 +218,9 @@ try
 catch
     fprintf(['Could not write to the file ''%s''. ', ...
         'Please recover the backup ''%s''.'], filename, filenameBackup);
-    
     if ~isempty(fID)
         fclose(fID);
     end
-    
     return
 end
 % =========================================================================
