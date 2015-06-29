@@ -45,10 +45,22 @@ tagsClose = cellfun(@(s) ['% =>', s, '>='], tags, 'UniformOutput', false);
 % =========================================================================
 currDoc = matlab.desktop.editor.getActive;
 
+% Check if a document is opened in editor 
 if isempty(currDoc)
     fprintf('No files are currently opened in Editor.\n');
     return
 end
+
+% Check if the document can be saved, i.e. has a persistent location on the
+% system drive
+try
+    currDoc.save;
+catch
+    fprintf(['Could not save the current document. Please make sure ' ...
+        'it has a persistent location.\n']);
+    return
+end
+
 % Store the current position within the document
 currPos = currDoc.Selection(1 : 2);
 
