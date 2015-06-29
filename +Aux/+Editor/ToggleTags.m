@@ -45,7 +45,7 @@ tagsClose = cellfun(@(s) ['% =>', s, '>='], tags, 'UniformOutput', false);
 % =========================================================================
 currDoc = matlab.desktop.editor.getActive;
 
-% Check if a document is opened in editor 
+% Check if a document is opened in editor
 if isempty(currDoc)
     fprintf('No files are currently opened in Editor.\n');
     return
@@ -62,8 +62,20 @@ end
 try
     currDoc.save;
 catch
-    fprintf(['Could not save the current document. Please make sure ' ...
+    fprintf(['Could not save current document. Please make sure ' ...
         'it has a persistent location.\n']);
+    return
+end
+
+% Generate a filename for the backup, regexp .m$ matches .m at the end of
+% the string
+filenameBackup = regexprep(currDoc.Filename, '.m$', '.bak');
+% Backup the active document
+try
+    movefile(currDoc.Filename, filenameBackup);
+catch
+    fprintf(['Could not create a backup file. ', ...
+        'The original file was not modified!']);
     return
 end
 
@@ -174,20 +186,28 @@ txt = strjoin(lines, char(10));
 
 % Store the filename before the active document is closed
 filename = currDoc.Filename;
+
 % Save and close the active document
 currDoc.save;
 currDoc.closeNoPrompt;
 
-% Generate a filename for the backup, regexp .m$ matches .m at the end of
-% the string
-filenameNew = regexprep(filename, '.m$', '.bak');
-% Backup the active document
-movefile(filename, filenameNew);
-
-% Open this file and dump the edited string into it
-fID = fopen(filename, 'w');
-fwrite(fID, txt, 'char');
-fclose(fID);
+% Open this file and dump the edited string into it (we may do this since a
+% backup was created previously)
+fID = [];
+try
+    fID = fopen(filename, 'w');
+    fwrite(fID, txt, 'char');
+    fclose(fID);
+catch
+    fprintf(['Could not write to the file ''%s''. ', ...
+        'Please recover the backup ''%s''.'], filename, filenameBackup);
+    
+    if ~isempty(fID)
+        fclose(fID);
+    end
+    
+    return
+end
 % =========================================================================
 
 
@@ -199,7 +219,12 @@ edit(filename);
 % Do smart indentation
 currDoc = matlab.desktop.editor.getActive();
 currDoc.smartIndentContents;
-currDoc.save;
+try
+    currDoc.save;
+catch
+    fprintf('Could not save current document.');
+    return
+end
 
 % Go to the saved position
 currDoc.goToPositionInLine(currPos(1), currPos(2));
