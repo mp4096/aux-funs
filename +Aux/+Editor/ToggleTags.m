@@ -81,7 +81,7 @@ currDoc.smartIndentContents;
 % Read the current document line by line
 % Notice: char(10) is equivalent to fprintf('\n')
 lines = textscan(currDoc.Text, '%s', 'Delimiter', char(10));
-lines = lines{1};
+lines = reshape(lines{1}, 1, []);
 
 % No tag is active
 currTag = 0;
