@@ -3,13 +3,16 @@ if ~Aux.KeyValueUtils.CheckString(key, allowedKeys)
     if isempty(varargin)
         s = '';
     else
-        s = sprintf(varargin{:});
+        s = [sprintf(varargin{:}), ' '];
     end
-    s = [s sprintf(' Unknown key ''%s''. ', key)];
-    s = [s sprintf('Following keys are allowed:\n')];
-    for i = 1 : 1 : length(allowedKeys)
-        s = [s sprintf('\t%s\n', allowedKeys{i})]; %#ok<AGROW>
-    end
+    
+    s = [s, sprintf('Unknown key ''%s''. ', key)];
+    s = [s, sprintf('Following keys are allowed:\n')];
+    
+    printFun = @(x) sprintf('\t%s\n', x);
+    strAllowedKeys = cellfun(printFun, allowedKeys, 'UniformOutput', 0);
+    s = [s, strjoin(strAllowedKeys)];
+    
     error('%s', s);
 end
 end

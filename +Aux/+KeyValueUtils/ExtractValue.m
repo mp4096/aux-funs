@@ -1,16 +1,16 @@
 function [status, value] = ExtractValue(parameterName, varargin)
-status = 0;
-N = length(varargin);
 
-if (mod(N, 2) ~= 0)
-    errorString = [ 'Invalid number of arguments: ' ...
-        'Missing names or values'];
-    error(errorString);
+status = 0;
+numArgs = length(varargin);
+
+if mod(numArgs, 2) ~= 0
+    error('Invalid number of arguments: Missing names or values');
 end
 
-input = reshape(varargin, 2, N/2)';
+input = reshape(varargin, 2, numArgs/2)';
 
 parameterIndex = strcmp(input(:, 1), parameterName);
+
 switch sum(parameterIndex)
     case 0
         status = -1;
@@ -22,7 +22,7 @@ switch sum(parameterIndex)
         value = 'Parameter value ambiguous!';
 end
 
-if (status == -2)
+if status == -2
     error(value);
 end
 end
