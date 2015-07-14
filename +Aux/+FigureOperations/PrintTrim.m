@@ -45,7 +45,7 @@ end
 % Process the figure handle argument
 % =========================================================================
 % Check if the figure handle exists. Return otherwise.
-if isempty(h) || isnan(h)
+if isempty(h)
     error('Cannot print from a non-existing handle!');
 end
 
