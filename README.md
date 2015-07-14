@@ -5,6 +5,15 @@ How often did you find yourself doing the same small, but tedious task in MATLAB
 
 Well, this toolbox aims squarely at increasing your MATLAB productivity by offering a broad functionality, from plots to statistics, from editor tweaking to LaTeX export. Of course it is not perfect nor it is unique, but it does what it should do.
 
+### Prerequisites:
+For `Aux.FigureOperations.PrintTrim` you will need the following softwar:e
+* a Perl distribution, e.g. [ActivePerl](http://www.activestate.com/activeperl/downloads)
+* a LaTeX distribution with [`pdfcrop`](https://www.ctan.org/pkg/pdfcrop?lang=en), e.g. [MiKTeX](http://miktex.org/download)
+* [ImageMagick](http://www.imagemagick.org/script/binary-releases.php)
+
 ### Functions overview
 * `+Editor`
- * `ToggleTags` : Toggles comments in selected blocks of your file
+ * `ToggleTags` : Toggle comments in selected blocks of your file
+* `+FigureOperations`
+ * `PrintTrim` : Print and auto-trim the specified figure. Both raster (`.png`) and vector (`.pdf`) formats are supported.
+
