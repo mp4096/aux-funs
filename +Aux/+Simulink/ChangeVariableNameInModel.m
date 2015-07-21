@@ -2,7 +2,8 @@ function [] = ChangeVariableNameInModel(mdlName, varNameOld, varNameNew)
 % this funciton finds all usages of 'varNameOld' in the simulink model
 % 'mdlName' and replaces them with 'varNameNew'
 % ATTENTION: The model must be able to compile, thus the variable which is
-% replaced has to exist
+% replaced has to exist. 
+% Also works on fields and structure names.
 
 % find blocks which use the variable
 VarUsage = Simulink.findVars(mdlName, 'Name', varNameOld);
@@ -17,8 +18,12 @@ for i = 1 : length(UserBlocks)
     UserBlocksFieldnames = fieldnames(UserBlocksDialogParam{i});
     % Loop through all parameters of the current block  
     for j = 1 : length(UserBlocksFieldnames)
-        if strcmp(varNameOld, get_param(UserBlocks{i}, UserBlocksFieldnames{j}))
-            set_param(UserBlocks{i}, UserBlocksFieldnames{j}, varNameNew);
+        parValOld = get_param(UserBlocks{i}, UserBlocksFieldnames{j});
+        parValNew = regexprep(parValOld, ...
+            ['((?<=\.)|(?<=^))' regexptranslate('escape',varNameOld ) ...
+            '((?=\.)|(?=$))]'], regexptranslate('escape',varNameNew));
+        if ~strcmp(parValOld, parValNew)
+            set_param(UserBlocks{i}, UserBlocksFieldnames{j}, parValNew);
             fprintf('Replaced parameter %s in block %s \n', UserBlocksFieldnames{j}, ...
                 UserBlocks{i});
         end
