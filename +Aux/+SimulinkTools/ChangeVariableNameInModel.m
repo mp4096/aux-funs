@@ -5,8 +5,9 @@ function ChangeVariableNameInModel(mdlName, varNameOld, varNameNew)
 % 'mdlName' and replaces them with 'varNameNew'. It also works on fields
 % and structure names.
 %
-% ATTENTION: The model must be able to compile, thus the variable which is
-% replaced has to exist.
+% WARNING: The model must be able to compile, thus the variable which is
+% replaced has to exist. Furthermore, the variables in the model workspace
+% are left unchanged => you will have to remove/rename them manually.
 %
 % Inputs:
 %   mdlName    : name of the model to be treated
@@ -15,13 +16,15 @@ function ChangeVariableNameInModel(mdlName, varNameOld, varNameNew)
 
 
 % =========================================================================
-% Make the regular expression
+% Prepare the variable names
 % =========================================================================
-% It matches the given variable name preceeded and succeeded by any
-% non-wording character
-varNameOldRegExp = ...
-    ['(?<!\w)(' regexptranslate('escape', varNameOld) ')(?!\w)'];
+% Escape the variable names
 varNameNew = regexptranslate('escape', varNameNew);
+varNameOld = regexptranslate('escape', varNameOld);
+
+% Create a regexp that matches the given variable name preceeded and
+% succeeded by any non-wording character
+varNameOldRegExp = ['(?<!\w)(', varNameOld, ')(?!\w)'];
 % =========================================================================
 
 
@@ -62,9 +65,7 @@ parsOld = cellfun(@get_param, ...
     userBlocksFlat, userBlocksFieldnames, 'UniformOutput', false);
 
 % Get only char parameters of the 'userBlocksFlat'
-idx2Delete = cellfun(@ischar, parsOld);
-idx2Delete = ~idx2Delete;
-
+idx2Delete = ~cellfun(@ischar, parsOld);
 userBlocksFieldnames(idx2Delete) = [];
 userBlocksFlat(idx2Delete) = [];
 parsOld(idx2Delete) = [];
