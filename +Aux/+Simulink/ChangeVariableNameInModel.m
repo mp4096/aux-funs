@@ -1,14 +1,18 @@
-function [] = ChangeVariableNameInModel(mdlName, varNameOld, varNameNew)
-% this funciton finds all usages of 'varNameOld' in the simulink model
-% 'mdlName' and replaces them with 'varNameNew'
+function ChangeVariableNameInModel(mdlName, varNameOld, varNameNew)
+% Find a variable in a Simulink model and rename it in all instances
+%
+% This function finds all usages of 'varNameOld' in the Simulink model
+% 'mdlName' and replaces them with 'varNameNew'. It also works on fields
+% and structure names.
+%
 % ATTENTION: The model must be able to compile, thus the variable which is
-% replaced has to exist. 
-% Also works on fields and structure names.
+% replaced has to exist.
 %
 % Inputs:
-%   mdlName:    Name of the model to be treated
-%   varNameOld: Name of the variable/structure/field to be changed
-%   varNameNew: New name of the variable/structure/field 
+%   mdlName    : name of the model to be treated
+%   varNameOld : name of the variable/structure/field to be changed
+%   varNameNew : new name of the variable/structure/field
+
 
 % =========================================================================
 % Make the regular expression
@@ -16,13 +20,12 @@ function [] = ChangeVariableNameInModel(mdlName, varNameOld, varNameNew)
 % It matches the given variable name preceeded and succeeded by any
 % non-wording character
 varNameOldRegExp = ...
-    ['(?<!\w)(' regexptranslate('escape', varNameOld) ...
-                ')(?!\w)'];
+    ['(?<!\w)(' regexptranslate('escape', varNameOld) ')(?!\w)'];
 % =========================================================================
 
 
 % =========================================================================
-% Open the model and find ALL blocks which use workspace variables
+% Open the model and find _all_ blocks which use workspace variables
 % =========================================================================
 open(mdlName);
 VarUsage = Simulink.findVars(mdlName);
@@ -30,7 +33,7 @@ UserBlocks = {};
 for i = 1 : numel(VarUsage)
     UserBlocks = {UserBlocks{:}, VarUsage(i).Users{:}};
 end
-% remove duplicate entries and the parant model
+% Remove duplicate entries and the parant model
 UserBlocks = unique(UserBlocks);
 UserBlocks = UserBlocks(~strcmp(UserBlocks, mdlName));
 % =========================================================================
@@ -46,7 +49,7 @@ UserBlocksDialogParam = get_param(UserBlocks,'DialogParameters');
 for i = 1 : length(UserBlocks)
     % Find dialog parameter names of the current UserBlock
     UserBlocksFieldnames = fieldnames(UserBlocksDialogParam{i});
-    % Loop through all parameters of the current block  
+    % Loop through all parameters of the current block
     for j = 1 : length(UserBlocksFieldnames)
         parValOld = get_param(UserBlocks{i}, UserBlocksFieldnames{j});
         if ischar(parValOld)
@@ -59,7 +62,6 @@ for i = 1 : length(UserBlocks)
             end
         end
     end
-end        
+end
 % =========================================================================
-
 end
