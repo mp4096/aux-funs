@@ -21,6 +21,7 @@ function ChangeVariableNameInModel(mdlName, varNameOld, varNameNew)
 % non-wording character
 varNameOldRegExp = ...
     ['(?<!\w)(' regexptranslate('escape', varNameOld) ')(?!\w)'];
+varNameNew = regexptranslate('escape', varNameNew);
 % =========================================================================
 
 
@@ -42,25 +43,37 @@ userBlocks = userBlocks(~strcmp(userBlocks, mdlName));
 % Replace the variables
 % =========================================================================
 % Find parameters of 'userBlocks'
-userBlocksDialogParam = get_param(userBlocks,'DialogParameters');
+userBlocksDialogParam = get_param(userBlocks, 'DialogParameters');
 
-% Loop through 'userBlocks'
-for i = 1 : length(userBlocks)
-    % Find dialog parameter names of the current 'userBlock'
-    userBlocksFieldnames = fieldnames(userBlocksDialogParam{i});
-    % Loop through all parameters of the current block
-    for j = 1 : length(userBlocksFieldnames)
-        parValOld = get_param(userBlocks{i}, userBlocksFieldnames{j});
-        if ischar(parValOld)
-            parValNew = regexprep(parValOld, ...
-                varNameOldRegExp, regexptranslate('escape', varNameNew));
-            if ~strcmp(parValOld, parValNew)
-                set_param(userBlocks{i}, userBlocksFieldnames{j}, parValNew);
-                fprintf('Replaced parameter %s in block %s \n', ...
-                    userBlocksFieldnames{j}, userBlocks{i});
-            end
-        end
-    end
-end
+% Find dialog parameter names of the current 'userBlock'
+userBlocksFieldnames = ...
+    cellfun(@fieldnames, userBlocksDialogParam, 'UniformOutput', false);
+
+% Replicate user blocks so that they match the number of the fieldnames
+userBlocksFlat = cellfun(@(x, y) repmat({x}, length(y), 1), ...
+    userBlocks, userBlocksFieldnames, 'UniformOutput', false);
+
+% Flatten the cell arrays
+userBlocksFieldnames = cat(1, userBlocksFieldnames{:});
+userBlocksFlat = cat(1, userBlocksFlat{:});
+
+% Get only char parameters of the 'userBlocksFlat'
+fun = @(b, f) ischar(get_param(b, f));
+idx = cellfun(fun, userBlocksFlat, userBlocksFieldnames);
+
+% Perform low-level replace using the specified names
+fun = @(x, y) LowLevelReplace(x, y, varNameOldRegExp, varNameNew);
+cellfun(fun, userBlocksFlat(idx), userBlocksFieldnames(idx));
 % =========================================================================
+end
+
+function LowLevelReplace(block, fieldname, oldVarExpr, newVar)
+parValOld = get_param(block, fieldname);
+parValNew = regexprep(parValOld, oldVarExpr, newVar);
+if ~strcmp(parValOld, parValNew)
+    set_param(block, fieldname, parValNew);
+    fprintf( ...
+        'Replaced parameter ''%s'' in block ''%s'': ', fieldname, block);
+    fprintf('''%s'' -> ''%s''\n', parValOld, parValNew);
+end
 end
