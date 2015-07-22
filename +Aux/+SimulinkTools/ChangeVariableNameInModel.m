@@ -57,23 +57,33 @@ userBlocksFlat = cellfun(@(x, y) repmat({x}, length(y), 1), ...
 userBlocksFieldnames = cat(1, userBlocksFieldnames{:});
 userBlocksFlat = cat(1, userBlocksFlat{:});
 
+% Get the parameters of fields in the blocks
+parsOld = cellfun(@get_param, ...
+    userBlocksFlat, userBlocksFieldnames, 'UniformOutput', false);
+
 % Get only char parameters of the 'userBlocksFlat'
-fun = @(b, f) ischar(get_param(b, f));
-idx = cellfun(fun, userBlocksFlat, userBlocksFieldnames);
+idx2Delete = cellfun(@ischar, parsOld);
+idx2Delete = ~idx2Delete;
 
-% Perform low-level replace using the specified names
-fun = @(x, y) LowLevelReplace(x, y, varNameOldRegExp, varNameNew);
-cellfun(fun, userBlocksFlat(idx), userBlocksFieldnames(idx));
+userBlocksFieldnames(idx2Delete) = [];
+userBlocksFlat(idx2Delete) = [];
+parsOld(idx2Delete) = [];
+
+% Rename the parameters
+renameFun = @(x) regexprep(x, varNameOldRegExp, varNameNew);
+parsNew = cellfun(renameFun, parsOld, 'UniformOutput', false);
+
+% Get only the parameters that really changed
+idx2Delete = cellfun(@strcmp, parsOld, parsNew);
+userBlocksFieldnames(idx2Delete) = [];
+userBlocksFlat(idx2Delete) = [];
+parsOld(idx2Delete) = [];
+parsNew(idx2Delete) = [];
+
+% Replace the parameters in blocks with the new names
+cellfun(@set_param, userBlocksFlat, userBlocksFieldnames, parsNew);
+dispStr = 'Replaced field ''%s'' in block ''%s'': ''%s'' -> ''%s''\n';
+dispFun = @(a, b, c, d) fprintf(dispStr, a, b, c, d);
+cellfun(dispFun, userBlocksFieldnames, userBlocksFlat, parsOld, parsNew);
 % =========================================================================
-end
-
-function LowLevelReplace(block, fieldname, oldVarExpr, newVar)
-parValOld = get_param(block, fieldname);
-parValNew = regexprep(parValOld, oldVarExpr, newVar);
-if ~strcmp(parValOld, parValNew)
-    set_param(block, fieldname, parValNew);
-    fprintf( ...
-        'Replaced parameter ''%s'' in block ''%s'': ', fieldname, block);
-    fprintf('''%s'' -> ''%s''\n', parValOld, parValNew);
-end
 end
