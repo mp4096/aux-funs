@@ -28,37 +28,36 @@ varNameOldRegExp = ...
 % Open the model and find _all_ blocks which use workspace variables
 % =========================================================================
 open(mdlName);
-VarUsage = Simulink.findVars(mdlName);
-UserBlocks = {};
-for i = 1 : numel(VarUsage)
-    UserBlocks = {UserBlocks{:}, VarUsage(i).Users{:}};
-end
+varUsage = Simulink.findVars(mdlName);
+userBlocks = {varUsage.Users};
+userBlocks = cat(1, userBlocks{:});
+
 % Remove duplicate entries and the parant model
-UserBlocks = unique(UserBlocks);
-UserBlocks = UserBlocks(~strcmp(UserBlocks, mdlName));
+userBlocks = unique(userBlocks);
+userBlocks = userBlocks(~strcmp(userBlocks, mdlName));
 % =========================================================================
 
 
 % =========================================================================
 % Replace the variables
 % =========================================================================
-% Find parameters of the UserBlocks
-UserBlocksDialogParam = get_param(UserBlocks,'DialogParameters');
+% Find parameters of 'userBlocks'
+userBlocksDialogParam = get_param(userBlocks,'DialogParameters');
 
-% Loop through UserBlocks
-for i = 1 : length(UserBlocks)
-    % Find dialog parameter names of the current UserBlock
-    UserBlocksFieldnames = fieldnames(UserBlocksDialogParam{i});
+% Loop through 'userBlocks'
+for i = 1 : length(userBlocks)
+    % Find dialog parameter names of the current 'userBlock'
+    userBlocksFieldnames = fieldnames(userBlocksDialogParam{i});
     % Loop through all parameters of the current block
-    for j = 1 : length(UserBlocksFieldnames)
-        parValOld = get_param(UserBlocks{i}, UserBlocksFieldnames{j});
+    for j = 1 : length(userBlocksFieldnames)
+        parValOld = get_param(userBlocks{i}, userBlocksFieldnames{j});
         if ischar(parValOld)
             parValNew = regexprep(parValOld, ...
                 varNameOldRegExp, regexptranslate('escape', varNameNew));
             if ~strcmp(parValOld, parValNew)
-                set_param(UserBlocks{i}, UserBlocksFieldnames{j}, parValNew);
+                set_param(userBlocks{i}, userBlocksFieldnames{j}, parValNew);
                 fprintf('Replaced parameter %s in block %s \n', ...
-                    UserBlocksFieldnames{j}, UserBlocks{i});
+                    userBlocksFieldnames{j}, userBlocks{i});
             end
         end
     end
