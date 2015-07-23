@@ -1,28 +1,18 @@
-classdef LaTeXDocument < handle
-    %LATEXDOCUMENT A class for creating LaTeX documents
+classdef Document < Aux.KeyValueUtils.KeyValueMixin
+    % A class for creating LaTeX documents
     
     properties (SetAccess = immutable, GetAccess = public)
-        % location - File location
-        % I.e. the full path to the directory containing the file
-        % Can be relative or absolute
-        location = '';
-        % filename - Filename
-        % Only the filename (excluding the '.tex' extension)
-        filename = '';
-        % path - Full path to file
-        % Concatenated location and filename + the '.tex' extension
-        path = '';
+        location = ''; % path to the document folder (rel/abs)
+        filename = ''; % document filename without the extension
+        path = '';     % full path to document (with the extension)
     end
     
     properties (Access = protected)
-        % f - File handle
-        % Error code set as default value.
-        f = -1;
-        % indentDepth - Indent depth
-        % This counter variable is used to track the current indent depth
-        indentDepth = 0;
-        % fileOpened - Flag to check whether the file is currently opened
-        fileOpened = false;
+        f = -1;             % file handle, error code by default
+        indentDepth = 0;    % indent depth counter
+        fileOpened = false; % flag for the file status, true if opened
+        arrayStretch = 1.4; % default array stretch in the document
+        softTabsLen = 3;    % length of the soft tabs
     end
     
     
@@ -30,14 +20,16 @@ classdef LaTeXDocument < handle
         function IndentR(obj)
             % Increase the indent depth (move to the right)
             %
-            % See also: INDENTL, INDENTRESET
+            % See also: AUX.LATEX.DOCUMENT.INDENTL,
+            %           AUX.LATEX.DOCUMENT.INDENTRESET
             obj.indentDepth = obj.indentDepth + 1;
         end
         
         function IndentL(obj)
             % Decrease the indent depth (move to the left)
             %
-            % See also: INDENTR, INDENTRESET
+            % See also: AUX.LATEX.DOCUMENT.INDENTR,
+            %           AUX.LATEX.DOCUMENT.INDENTRESET
             if obj.indentDepth ~= 0
                 obj.indentDepth = obj.indentDepth - 1;
             end
@@ -46,185 +38,29 @@ classdef LaTeXDocument < handle
         function IndentReset(obj)
             % Reset the indent depth (set it to 0)
             %
-            % See also: INDENTR, INDENTL
+            % See also: AUX.LATEX.DOCUMENT.INDENTR,
+            % AUX.LATEX.DOCUMENT.INDENTL
+            
             obj.indentDepth = 0;
         end
     end
     
-    methods (Access = public, Static = true)
-        function escapedString = EscapeLaTeXChars(str, escChrs, escSubs)
-            % Escape special LaTeX characters
-            %
-            % Following chars will be escaped by default:
-            % %, $, #, _, &, {, }, \, ~
-            %
-            % Inputs:
-            %    str       : input string
-            %    [escChrs] : cell array with chars to be escaped, optional
-            %    [escSubs] : cell array with escaped characters, optional
-            %                (must be the same length as 'escChrs')
-            %
-            % Outputs:
-            %    ret       : output string
-            %
-            % This function was adapted from the function 'escapeString'
-            % from Christian
-            % http://www.mathworks.de/matlabcentral/fileexchange/
-            % authors/257141
-            %
-            % http://www.mathworks.de/matlabcentral/fileexchange/
-            % 41512-escapestring-convert-special-characters-in-a-
-            % string-into-their-escape-sequences
-            %
-            %
-            % Code covered by BSD license
-            
-            escapedString = '';
-            
-            if nargin == 1
-                escChrs = {'%', '$', '#', '_', '&', '{', '}', ...
-                    '\', '~'};
-                escSubs = {'{\%}', '{\$}', '{\#}', '{\_}', ...
-                    '{\&}', '{\{}', '{\}}', '{\textbackslash}', ...
-                    '{\textasciitilde}'};
-            end
-            
-            % Disable performance warnings, since performance is not
-            % important here
-            for i = 1 : 1 : length(str)
-                for j = 1 : 1 : length(escChrs)
-                    found = false;
-                    if str(i) == escChrs{j}
-                        escapedString = ...
-                            [escapedString, escSubs{j}]; %#ok<AGROW>
-                        found = true;
-                        break
-                    end
-                end
-                if ~found
-                    escapedString = [escapedString, str(i)]; %#ok<AGROW>
-                end
-            end
-        end
-        
-        function RunPDFLaTeX(fullFilename, varargin)
-            % Run 'pdflatex' with specified parameters
-            %
-            % Notice that the file must be closed before calling this
-            % method!
-            %
-            % Inputs:
-            %   fullFilename : the '.tex'-file to be compiled
-            %   [varargin]   : optional parameters as key-values. See below
-            %                  for available keys.
-            %
-            % Keys:
-            %   num_comp_runs : number of compilation runs, 2 by default
-            %   pdflatex_args : 'pdflatex' arguments, default argument:
-            %                   '-interaction=batchmode'
-            %   debug_mode    : debug mode on or off, use logical value.
-            %                   In debug mode, the source code and all
-            %                   auxiliary files are not deleted after
-            %                   compilation
-            %   echo_mode     : if activated (logical value), echoes the
-            %                   command line output to the MATLAB command
-            %                   window
-            
-            [texFileLocation, ~, ~] = fileparts(fullFilename);
-            texFileLocation = [strrep(texFileLocation, '\', '/'), '/'];
-            
-            % Run PDFLaTeX several times to resolve all references, 2 by
-            % default
-            [s, v] = Aux.KeyValueUtils.ExtractValue('num_comp_runs', varargin{:});
-            if s == 0
-                numComp = v;
-            else
-                numComp = 2;
-            end
-            
-            % Extract arguments for 'pdflatex'
-            [s, v] = Aux.KeyValueUtils.ExtractValue('pdflatex_args', varargin{:});
-            if s == 0
-                args = v;
-            else
-                args = ['-output-directory=' texFileLocation ...
-                    ' -interaction=batchmode'];
-            end
-            
-            % Extract debug flag, no debug by default
-            [s, v] = Aux.KeyValueUtils.ExtractValue('debug_mode', varargin{:});
-            if s == 0
-                debug = logical(v);
-            else
-                debug = false;
-            end
-            
-            % Extract echo flag, silent mode by default. If, however,
-            % echoing is turned on, then append '-interaction=nonstopmode'
-            % to the arguments string. 'pdflatex' will take the latest
-            % interaction mode specification, thus enabling some output to
-            % the MATLAB Command Window
-            [s, v] = Aux.KeyValueUtils.ExtractValue('echo_mode', varargin{:});
-            if s == 0
-                echo = logical(v);
-                args = [args ' -interaction=nonstopmode'];
-            else
-                echo = false;
-            end
-            
-            % Start compilation
-            % Use '[~, ~] = ' to suppress output to MATLAB Command Window
-            if echo
-                for i = 1 : 1 : numComp
-                    fprintf('%i... ', i);
-                    [~, ~] = dos(['pdflatex ' args ' ' fullFilename], ...
-                        '-echo');
-                end
-            else
-                for i = 1 : 1 : numComp
-                    fprintf('%i... ', i);
-                    [~, ~] = dos(['pdflatex ' args ' ' fullFilename]);
-                end
-            end
-            
-            % Delete the aux files, if no debug mode
-            [fPath, fName, ~] = fileparts(fullFilename);
-            fPath = strrep(fPath, '\', '/');
-            basename = [fPath, '/', fName];
-            
-            toDelete{1} = [basename '.aux'];
-            toDelete{2} = [basename '.out'];
-            toDelete{3} = [basename '.log'];
-            toDelete{4} = [basename '.tex'];
-            toDelete{5} = [basename '.lot'];
-            toDelete{6} = [basename '.lof'];
-            toDelete{7} = [basename '.toc'];
-            
-            if ~debug
-                for i = 1 : 1 : numel(toDelete)
-                    % Notice that the files must be deleted only if they
-                    % exist; otherwise, MATLAB throws a warning.
-                    if exist(toDelete{i}, 'file')
-                        delete(toDelete{i});
-                    end
-                end
-            end
-        end
-    end
-    
+    % =====================================================================
+    % Constructor and destructor
+    % =====================================================================
     methods
-        function obj = LaTeXDocument(fullFilename, varargin)
+        function obj = Document(fullFilename, varargin)
             % Class constructor
             %
             % Inputs:
             %   fullFilename : filename specification. It can be specified
             %                  as a full absolute or relative path. If only
             %                  the filename is specified, the current
-            %                  working directory is used
+            %                  working directory is used.
             %   [varargin]   : arguments passed through to the 'fopen'
-            %                  function. Default values: create new or 
-            %                  overwrite file, system native machine 
-            %                  format, UTF-8 encoding
+            %                  function. Default values: create new or
+            %                  overwrite file, system native machine
+            %                  format, UTF-8 encoding.
             %
             % Outputs:
             %   obj           : handle to the constructed object
@@ -254,6 +90,28 @@ classdef LaTeXDocument < handle
             end
         end
         
+        function delete(obj)
+            % Class destructor
+            %
+            % Used to close the opened or created file and thus unlock
+            % access to it
+            %
+            % See also: AUX.LATEX.LATEXDOCUMENT.CLOSE, FCLOSE
+            
+            obj.Close;
+        end
+    end
+    % =====================================================================
+    
+    methods
+        function ret = IsOpened(obj)
+            % Check if the file is opened
+            %
+            % See also: AUX.LATEX.LATEXDOCUMENT.CLOSE
+            
+            ret = obj.fileOpened;
+        end
+        
         function Close(obj)
             % Close file (if opened)
             %
@@ -274,17 +132,6 @@ classdef LaTeXDocument < handle
                 obj.f = fopen(obj.path, 'a');
                 obj.fileOpened = true;
             end
-        end
-        
-        function delete(obj)
-            % Class destructor
-            %
-            % Used to close the opened or created file and thus unlock
-            % access to it
-            %
-            % See also: AUX.LATEX.LATEXDOCUMENT.CLOSE, FCLOSE
-            
-            obj.Close;
         end
         
         function NewLn(obj, num)
@@ -311,8 +158,8 @@ classdef LaTeXDocument < handle
                 num = obj.indentDepth;
             end
             
-            % Use soft tabs with 3 spaces
-            fprintf(obj.f, repmat('   ', 1, num));
+            % Use soft tabs as configured
+            fprintf(obj.f, repmat(blank(obj.softTabsLen), 1, num));
         end
         
         function WrtNI(obj, varargin)
@@ -322,7 +169,7 @@ classdef LaTeXDocument < handle
             %   varargin : values that will be passed to the 'fprintf'
             %              method, writing to the current file
             %
-            % See also: FPRINTF, AUX.LATEX.LATEXDOCUMENT.WRT, 
+            % See also: FPRINTF, AUX.LATEX.LATEXDOCUMENT.WRT,
             %           AUX.LATEX.LATEXDOCUMENT.WRTLN
             
             fprintf(obj.f, varargin{:});
@@ -335,7 +182,7 @@ classdef LaTeXDocument < handle
             %   varargin : values that will be passed to the 'fprintf'
             %              method, writing to the current file
             %
-            % See also: FPRINTF, AUX.LATEX.LATEXDOCUMENT.WRTNI, 
+            % See also: FPRINTF, AUX.LATEX.LATEXDOCUMENT.WRTNI,
             %           AUX.LATEX.LATEXDOCUMENT.WRTLN
             
             obj.PutIndent;
@@ -349,7 +196,7 @@ classdef LaTeXDocument < handle
             %   varargin : values that will be passed to the 'fprintf'
             %              method, writing to the file 'obj.f'
             %
-            % See also: FPRINTF, AUX.LATEX.LATEXDOCUMENT.WRTNI, 
+            % See also: FPRINTF, AUX.LATEX.LATEXDOCUMENT.WRTNI,
             %           AUX.LATEX.LATEXDOCUMENT.WRT
             
             obj.Wrt(varargin{:});
@@ -446,7 +293,7 @@ classdef LaTeXDocument < handle
             % 4 - paragraph
             % 5 - subparagraph
             %
-            % See also: AUX.LATEX.LATEXDOCUMENT.BEGENV, 
+            % See also: AUX.LATEX.LATEXDOCUMENT.BEGENV,
             %           AUX.LATEX.LATEXDOCUMENT.ENDENV
             
             % Check the input arguments and set the default value for the
@@ -578,38 +425,19 @@ classdef LaTeXDocument < handle
         end
         
         function AddRichTable(obj, richTable)
-            % Add a 'Aux.DataTypes.RichTable' object to the document
+            % Add an 'Aux.DataTypes.RichTable' object to the document
             %
             % Inputs:
-            %   table : handle to a 'RichTable' object
+            %   richTable : handle to a 'RichTable' object
             
             
             % =============================================================
             % Prepare the alignment and column separators string
             % =============================================================
-            alignment = '{ ';
-            
-            for i = 1 : 1 : richTable.numCols
-                % We do not really need to pre-allocate this string here,
-                % since the number of columns is mostly low and the
-                % performance is not worth coding effort
-                
-                % Set the separator
-                if richTable.sepVer(i)
-                    alignment = [alignment '| ']; %#ok<AGROW>
-                end
-                
-                % Set the alignment itself
-                alignment = [ ...
-                    alignment richTable.alignment{i} ' ']; %#ok<AGROW>
-            end
-            
-            % Set the rightmost separator
-            if richTable.sepVer(end)
-                alignment = [alignment '| '];
-            end
-            
-            alignment =  [alignment '}'];
+            separators = repmat({''}, 1, richTable.numCols + 1);
+            separators(logical(richTable.sepVer)) = {'|'};
+            alignment = [separators; richTable.alignment, {''}];
+            alignment = ['{', strjoin(alignment(:)), '}'];
             % =============================================================
             
             
@@ -621,11 +449,9 @@ classdef LaTeXDocument < handle
             obj.BegEnv('longtable', alignment);
             
             
-            
             % =============================================================
             % Print items
             % =============================================================
-            
             colorsBkg = richTable.ColorsItems('Bkg');
             colorsFrg = richTable.ColorsItems('Frg');
             
@@ -650,7 +476,6 @@ classdef LaTeXDocument < handle
                         printSpec = '%s & ';
                     end
                     
-                    
                     if i <= richTable.numRowsH
                         mode = richTable.modeH;
                     else
@@ -663,9 +488,9 @@ classdef LaTeXDocument < handle
                         case 'verbatim'
                             pFun = @(s) ['\verb|', s, '|'];
                         case 'escape'
-                            pFun = @obj.EscapeLaTeXChars;
+                            pFun = @Aux.LaTeX.Escape;
                     end
-
+                    
                     obj.WrtNI(printSpec, pFun(richTable.items{i, j}));
                 end
             end
@@ -685,42 +510,33 @@ classdef LaTeXDocument < handle
             
             obj.EndEnv('longtable');
             obj.EndEnv('center');
-            %obj.WrtLn('\\renewcommand{\\arraystretch}{%.2f}', obj.conf.arrayStretch);
+            obj.WrtLn('\\renewcommand{\\arraystretch}{%.2f}', ...
+                obj.arrayStretch);
         end
         
         function ClearPage(obj)
             % Add a clear page command
             obj.WrtLn('\\clearpage');
         end
-        
-        function Compile(obj, varargin)
-            % Compiles the LaTeX document
-            %
-            % Notice that this method should be run only at the end of the
-            % document creation, since it closes and possibly even deletes
-            % it
-            %
+    end
+    
+    methods (Hidden)
+        function Set.array_stretch(obj, val)
+            % Configure the array stretch value in the document
+            % 
             % Inputs:
-            %   [varargin] : optional parameters as key-values. See below
-            %                for available keys.
-            %
-            % Keys:
-            %   num_comp_runs : number of compilation runs, 2 by default
-            %   pdflatex_args : 'pdflatex' arguments, default argument:
-            %                   '-interaction=batchmode'
-            %   debug_mode    : debug mode on or off, use logical value.
-            %                   In debug mode, the source code and all
-            %                   auxiliary files are not deleted after
-            %                   compilation
-            %   echo_mode     : if activated (logical value), echoes the
-            %                   command line output to the MATLAB command
-            %                   window
-            %
-            % See also: AUX.LATEX.LATEXDOCUMENT.RUNPDFLATEX
+            %   val : array stretch in relative units (1.4 by default)
             
-            % Close the file before compiling it
-            obj.Close;
-            obj.RunPDFLaTeX(obj.path, varargin{:});
+            obj.arrayStretch = val;
+        end
+        
+        function Set.soft_tabs_length(obj, val)
+            % Configure the soft tabs lengths
+            % 
+            % Inputs:
+            %   val : number of whitespaces in a tab (3 by default)
+            
+            obj.softTabsLen = val;
         end
     end
 end
