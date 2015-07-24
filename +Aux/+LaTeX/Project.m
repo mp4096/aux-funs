@@ -82,11 +82,8 @@ classdef Project < Aux.KeyValueUtils.KeyValueMixin
             end
         end
         
-        function tDoc = AddFromTemplate(obj, templatePath)
-            [~, fName, ~] = fileparts(templatePath);
-            
-            tDoc = obj.AddDocument(fName);
-            
+        function tDoc = AddFromTemplate(obj, templatePath, docName)
+            tDoc = obj.AddDocument(docName);
             tDoc.Close;
             copyfile(templatePath, tDoc.fullPath);
             tDoc.Reopen;
