@@ -4,7 +4,7 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
     properties (SetAccess = immutable, GetAccess = public)
         location = ''; % path to the document folder (rel/abs)
         filename = ''; % document filename without the extension
-        path = '';     % full path to document (with the extension)
+        fullPath = ''; % full path to document (with the extension)
     end
     
     properties (Access = protected)
@@ -67,7 +67,7 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             %
             % See also: FOPEN
             
-            [obj.path, obj.filename, obj.location] = ...
+            [obj.fullPath, obj.filename, obj.location] = ...
                 Aux.FileHandling.FormatFilename(fullFilename, 'tex');
             
             if nargin == 1
@@ -75,18 +75,18 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
                 % permissions:      'w' (create new or overwrite)
                 % machineFormat:    'n' (system native)
                 % encoding:         'UTF-8'
-                obj.f = fopen(obj.path, 'w', 'n', 'UTF-8');
+                obj.f = fopen(obj.fullPath, 'w', 'n', 'UTF-8');
             else
                 % If any additional arguments are specified, use them when
                 % opening the file
-                obj.f = fopen(obj.path, varargin{:});
+                obj.f = fopen(obj.fullPath, varargin{:});
             end
             
             obj.fileOpened = true;
             
             % Check if the file was created/opened successfully
             if obj.f == -1
-                error('Could not create/open file ''%s''', obj.path);
+                error('Could not create/open file ''%s''', obj.fullPath);
             end
         end
         
@@ -129,7 +129,7 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             % See also: FOPEN, AUX.LATEX.LATEXDOCUMENT.CLOSE
             
             if ~obj.fileOpened
-                obj.f = fopen(obj.path, 'a');
+                obj.f = fopen(obj.fullPath, 'a');
                 obj.fileOpened = true;
             end
         end
@@ -159,7 +159,7 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             end
             
             % Use soft tabs as configured
-            fprintf(obj.f, repmat(blank(obj.softTabsLen), 1, num));
+            fprintf(obj.f, repmat(blanks(obj.softTabsLen), 1, num));
         end
         
         function WrtNI(obj, varargin)
