@@ -452,8 +452,8 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             % =============================================================
             % Print items
             % =============================================================
-            colorsBkg = richTable.ColorsItems('Bkg');
-            colorsFrg = richTable.ColorsItems('Frg');
+            colorsBkg = richTable.GetColorsItems('Bkg');
+            colorsFrg = richTable.GetColorsItems('Frg');
             
             for i = 1 : 1 : richTable.numRows
                 if richTable.sepHor(i)
@@ -479,7 +479,7 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
                     if i <= richTable.numRowsH
                         mode = richTable.modeH;
                     else
-                        mode = richTable.modeT;
+                        mode = richTable.modeB;
                     end
                     
                     switch mode

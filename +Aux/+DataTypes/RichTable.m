@@ -176,7 +176,7 @@ classdef RichTable < Aux.KeyValueUtils.KeyValueMixin
         
         function AssignColorSingleCell(obj, type, row, column, color)
             % Check if the input array is a color specification
-            if ~Aux.General.Colors.ValidColor(color)
+            if ~Aux.General.Colours.ValidColor(color)
                 error('Invalid color specification!');
             end
             
@@ -215,16 +215,16 @@ classdef RichTable < Aux.KeyValueUtils.KeyValueMixin
         
         function AssignColorScheme(obj, type, colorScheme)
             % Check if the input array is a color specification
-            if ~Aux.General.Colors.ValidColor(colorScheme)
+            if ~Aux.General.Colours.ValidColour(colorScheme)
                 error('Invalid colormap specification!');
             end
             
             switch type(end)
                 case 'H'
-                    colormapRows = Aux.General.Colors.ReplicateCmap( ...
+                    colormapRows = Aux.General.Colours.ReplicateCmap( ...
                         colorScheme, obj.numRowsH);
                 case 'B'
-                    colormapRows = Aux.General.Colors.ReplicateCmap( ...
+                    colormapRows = Aux.General.Colours.ReplicateCmap( ...
                         colorScheme, obj.numRowsB);
                 otherwise
                     error('Invalid type specification: ''%s''!', type);
