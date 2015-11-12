@@ -24,8 +24,7 @@ classdef BoundPolynomial < handle
             
             % Some really funky stuff
             obj.diffCoeffs = abs(bsxfun(@times, ...
-                pascal(obj.n + 1, 2), ...
-                arrayfun(@factorial, 0 : 1 : obj.n)'));
+                pascal(obj.n + 1, 2), factorial((0 : 1 : obj.n)')));
             
             obj.stateValue = [];
             obj.derivOrder = [];
@@ -46,7 +45,7 @@ classdef BoundPolynomial < handle
             obj.numBounds = obj.numBounds + 1;
         end
         
-        function [coeffVec, solverMsg] = GetNumCoeff(obj)
+        function [coeffVec, solverFlag] = GetNumCoeff(obj)
             A = zeros(obj.numBounds, obj.n + 1);
             
             for i = 1 : 1 : obj.numBounds
@@ -59,16 +58,13 @@ classdef BoundPolynomial < handle
             rankAb = rank([A, b]);
             
             if (rankA == rankAb) && (rankA == obj.n + 1)
-                solverMsg = sprintf('Unique solution found!');
-                
                 coeffVec = linsolve(A, obj.boundValue);
-            else
-                solverMsg = ['Polynomial seems to be over- or ', ...
-                    'underconstrained, or the constaints are ', ...
-                    'inconsistent. Solution estimated using ', ...
-                    'a pseudoinverse.'];
                 
+                solverFlag = 0;
+            else
                 coeffVec = pinv(A)*b;
+                
+                solverFlag = 1;
             end
             
             coeffVec = reshape(coeffVec, 1, []);
@@ -100,8 +96,17 @@ classdef BoundPolynomial < handle
                         obj.boundValue(i)));
                 end
                 
-                [coeffs, solverMsg] = obj.GetNumCoeff;
-                fprintf('\n\t%s\n', solverMsg);
+                [coeffs, solverFlag] = obj.GetNumCoeff;
+                
+                switch solverFlag
+                    case 0
+                        fprintf('\n\tUnique solution found.\n');
+                    case 1
+                        fprintf(['\n\tPolynomial seems to be over- ', ...
+                            'or underconstrained, or the constaints ', ...
+                            'are inconsistent.\n\tSolution estimated ', ...
+                            'using a pseudoinverse.\n']);
+                end
                 
                 fprintf('\n\tCurrent coefficients estimate:\n');
                 disp(coeffs);
