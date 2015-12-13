@@ -1,49 +1,33 @@
 classdef Document < Aux.KeyValueUtils.KeyValueMixin
-    % A class for creating LaTeX documents
+    % A class for creating single LaTeX files
+    %
+    % See also: AUX.LATEX.PROJECT, AUX.LATEX.ESCAPE
     
+    
+    % =====================================================================
+    % File paths
+    % =====================================================================
     properties (SetAccess = immutable, GetAccess = public)
         location = ''; % path to the document folder (rel/abs)
         filename = ''; % document filename without the extension
         fullPath = ''; % full path to document (with the extension)
     end
+    % =====================================================================
     
-    properties (Access = protected)
+    % =====================================================================
+    % Private file handling and indenting properties
+    % =====================================================================
+    properties (Access = private)
         f = -1;             % file handle, error code by default
-        indentDepth = 0;    % indent depth counter
         fileOpened = false; % flag for the file status, true if opened
+        
+        indentDepth = 0;    % indent depth counter
+        softTabsLen = 4;    % length of the soft tabs
+        
         arrayStretch = 1.4; % default array stretch in the document
-        softTabsLen = 3;    % length of the soft tabs
     end
+    % =====================================================================
     
-    
-    methods (Access = protected)
-        function IndentR(obj)
-            % Increase the indent depth (move to the right)
-            %
-            % See also: AUX.LATEX.DOCUMENT.INDENTL,
-            %           AUX.LATEX.DOCUMENT.INDENTRESET
-            obj.indentDepth = obj.indentDepth + 1;
-        end
-        
-        function IndentL(obj)
-            % Decrease the indent depth (move to the left)
-            %
-            % See also: AUX.LATEX.DOCUMENT.INDENTR,
-            %           AUX.LATEX.DOCUMENT.INDENTRESET
-            if obj.indentDepth ~= 0
-                obj.indentDepth = obj.indentDepth - 1;
-            end
-        end
-        
-        function IndentReset(obj)
-            % Reset the indent depth (set it to 0)
-            %
-            % See also: AUX.LATEX.DOCUMENT.INDENTR,
-            % AUX.LATEX.DOCUMENT.INDENTL
-            
-            obj.indentDepth = 0;
-        end
-    end
     
     % =====================================================================
     % Constructor and destructor
@@ -103,9 +87,46 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
     end
     % =====================================================================
     
+    % =====================================================================
+    % Protected indenting methods
+    % =====================================================================
+    methods (Access = protected)
+        function IndentR(obj)
+            % Increase the indent depth (move to the right)
+            %
+            % See also: AUX.LATEX.DOCUMENT.INDENTL,
+            %           AUX.LATEX.DOCUMENT.INDENTRESET
+            
+            obj.indentDepth = obj.indentDepth + 1;
+        end
+        
+        function IndentL(obj)
+            % Decrease the indent depth (move to the left)
+            %
+            % See also: AUX.LATEX.DOCUMENT.INDENTR,
+            %           AUX.LATEX.DOCUMENT.INDENTRESET
+            if obj.indentDepth ~= 0
+                obj.indentDepth = obj.indentDepth - 1;
+            end
+        end
+        
+        function IndentReset(obj)
+            % Reset the indent depth (set it to 0)
+            %
+            % See also: AUX.LATEX.DOCUMENT.INDENTR,
+            % AUX.LATEX.DOCUMENT.INDENTL
+            
+            obj.indentDepth = 0;
+        end
+    end
+    % =====================================================================
+    
+    % =====================================================================
+    % Service and file handling methods
+    % =====================================================================
     methods
         function ret = IsOpened(obj)
-            % Check if the file is opened
+            % Check if the LaTeX file is opened
             %
             % See also: AUX.LATEX.LATEXDOCUMENT.CLOSE
             
@@ -113,7 +134,7 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
         end
         
         function Close(obj)
-            % Close file (if opened)
+            % Closes the LaTeX file (if opened)
             %
             % See also: FCLOSE, AUX.LATEX.LATEXDOCUMENT.DELETE
             
@@ -124,7 +145,7 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
         end
         
         function Reopen(obj)
-            % Reopen file (if not opened)
+            % Reopens the LaTeX file (if not already opened)
             %
             % See also: FOPEN, AUX.LATEX.LATEXDOCUMENT.CLOSE
             
@@ -133,7 +154,13 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
                 obj.fileOpened = true;
             end
         end
-        
+    end
+    % =====================================================================
+    
+    % =====================================================================
+    % Public low-level file writing methods
+    % =====================================================================
+    methods
         function NewLn(obj, num)
             % Add a new line
             %
@@ -159,7 +186,7 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             end
             
             % Use soft tabs as configured
-            fprintf(obj.f, repmat(blanks(obj.softTabsLen), 1, num));
+            fprintf(obj.f, blanks(obj.softTabsLen*num));
         end
         
         function WrtNI(obj, varargin)
@@ -238,7 +265,13 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             obj.IndentL;
             obj.WrtLn('\\end{%s}', name);
         end
-        
+    end
+    % =====================================================================
+    
+    % =====================================================================
+    % Public writing methods
+    % =====================================================================
+    methods
         function ListEnv(obj, envType, items)
             % List environment
             %
@@ -519,7 +552,11 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             obj.WrtLn('\\clearpage');
         end
     end
+    % =====================================================================
     
+    % =====================================================================
+    % Set methods
+    % =====================================================================
     methods (Hidden)
         function Set.array_stretch(obj, val)
             % Configure the array stretch value in the document
@@ -534,9 +571,10 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             % Configure the soft tabs lengths
             % 
             % Inputs:
-            %   val : number of whitespaces in a tab (3 by default)
+            %   val : number of whitespaces in a tab (4 by default)
             
             obj.softTabsLen = val;
         end
     end
+    % =====================================================================
 end
