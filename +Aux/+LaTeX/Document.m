@@ -158,6 +158,45 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             ret = obj.fileOpened;
         end
         
+        function OpenOutsideMATLAB(obj, force)
+            % Open the LaTeX document in the standard external program
+            % outside MATLAB. If the file is still opened for writing in
+            % MATLAB, an error is thrown. If the force flag is specified,
+            % the file is closed in MATLAB and opened outside.
+            %
+            % Input
+            %   [force] : force open 
+            %
+            % See also: ISPC, WINOPEN, OPEN
+            
+            % Check the arguments. No forced open if no arguments
+            % specified. One actually has to store a non-empty char in
+            % 'force'. If an empty char is stored, the comparison below
+            % also returns an empty char which is not allowed for &&
+            if nargin == 1
+                force = ' ';
+            end
+            
+            % Check if opened and if forced, throw appropriate errors and
+            % warnings
+            if (force ~= 'f') && obj.IsOpened
+                error(['Cannot open the document outside MATLAB ', ...
+                    'while it is still opened for writing!']);
+            elseif obj.IsOpened
+                obj.Close;
+                warning(['The opened file was closed in order to ', ...
+                    'open it outside MATLAB. Please reopen it manually.']);
+            end
+            
+            % Depending on whether we're on a PC or not, open the file with
+            % an appropriate function
+            if ispc
+                winopen(obj.fullPath);
+            else
+                open(obj.fullPath);
+            end
+        end
+        
         function Close(obj)
             % Closes the LaTeX file (if opened)
             %
@@ -310,25 +349,30 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             %   items   : items, a Nx1 or Nx2 cell array containing the
             %             items to be set in the list
             
-            % Get number of columns
-            numCols = size(items, 2);
+            % Get number of columns and items
+            [numItems, numCols] = size(items);
             
             % Begin environment
             obj.BegEnv(envType);
             
+            % Select the right printing string
             switch numCols
                 case 1
-                    printFun = @(i) obj.WrtLn('\\item %s', i);
-                    cellfun(printFun, items);
+                    prtStr = '\\item %s';
                 case 2
-                    printFun = @(d, i) obj.WrtLn('\\item[%s] %s', d, i);
-                    cellfun(printFun, items{:, 1}, items{:, 2});
+                    prtStr = '\\item[%s] %s';
                 otherwise
                     error(['This method accepts only Nx1 or ', ...
                         'Nx2 cell arrays!']);
             end
             
-            % End environment
+            % Print the items. Notice that one may not use cellfun here, as
+            % the write order matters!
+            for i = 1 : 1 : numItems
+                obj.WrtLn(prtStr, items{i, :});
+            end
+            
+            % Close the environment
             obj.EndEnv(envType);
             obj.NewLn;
         end
@@ -384,10 +428,12 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
                     error('Invalid depth parameter!');
             end
             
+            % Add asterisk if the section should not be added to ToC
             if ~addToToC
                 depthName = [depthName, '*'];
             end
             
+            % Add two new lines before the new section
             obj.NewLn(2);
             
             if iscell(title) && (numel(title) == 2)
