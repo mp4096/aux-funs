@@ -51,27 +51,23 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             %
             % See also: FOPEN
             
+            % Process the filename specification
             [obj.fullPath, obj.filename, obj.location] = ...
                 Aux.FileHandling.FormatFilename(fullFilename, 'tex');
             
+            % Set default fopen options
             if nargin == 1
-                % Use default values
                 % permissions:      'w' (create new or overwrite)
                 % machineFormat:    'n' (system native)
                 % encoding:         'UTF-8'
-                obj.f = fopen(obj.fullPath, 'w', 'n', 'UTF-8');
+                fopenOptions = {'w', 'n', 'UTF-8'};
             else
-                % If any additional arguments are specified, use them when
-                % opening the file
-                obj.f = fopen(obj.fullPath, varargin{:});
+                % If there are any additional options, use them for fopen
+                fopenOptions = varargin;
             end
             
-            obj.fileOpened = true;
-            
-            % Check if the file was created/opened successfully
-            if obj.f == -1
-                error('Could not create/open file ''%s''', obj.fullPath);
-            end
+            % Open the specified file
+            obj.OpenFile(fopenOptions{:})
         end
         
         function delete(obj)
@@ -83,6 +79,34 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             % See also: AUX.LATEX.LATEXDOCUMENT.CLOSE, FCLOSE
             
             obj.Close;
+        end
+    end
+    % =====================================================================
+    
+    % =====================================================================
+    % Private file opening method
+    % =====================================================================
+    methods (Access = private)
+        function OpenFile(obj, varargin)
+            % Opens the document file
+            %
+            % See also: FOPEN
+            
+            if obj.fileOpened
+                % File already opened, do nothing and return
+                return
+            end
+            
+            % Open the document file with specified options
+            obj.f = fopen(obj.fullPath, varargin{:});
+            
+            % Check if the file was created/opened successfully
+            if obj.f == -1
+                error('Could not create/open file ''%s''', obj.fullPath);
+            end
+            
+            % Everything seems to be ok
+            obj.fileOpened = true;
         end
     end
     % =====================================================================
@@ -105,6 +129,7 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             %
             % See also: AUX.LATEX.DOCUMENT.INDENTR,
             %           AUX.LATEX.DOCUMENT.INDENTRESET
+            
             if obj.indentDepth ~= 0
                 obj.indentDepth = obj.indentDepth - 1;
             end
@@ -139,8 +164,14 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             % See also: FCLOSE, AUX.LATEX.LATEXDOCUMENT.DELETE
             
             if obj.fileOpened
-                fclose(obj.f);
-                obj.fileOpened = false;
+                % Try to close the file
+                try
+                    fclose(obj.f);
+                    % Change the file status only if fclose was successful
+                    obj.fileOpened = false;
+                catch
+                    error('Could not close file ''%s''!', obj.filename);
+                end
             end
         end
         
@@ -149,10 +180,7 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             %
             % See also: FOPEN, AUX.LATEX.LATEXDOCUMENT.CLOSE
             
-            if ~obj.fileOpened
-                obj.f = fopen(obj.fullPath, 'a');
-                obj.fileOpened = true;
-            end
+            obj.OpenFile('a');
         end
     end
     % =====================================================================
@@ -269,7 +297,7 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
     % =====================================================================
     
     % =====================================================================
-    % Public writing methods
+    % Public high-level writing methods
     % =====================================================================
     methods
         function ListEnv(obj, envType, items)
@@ -281,7 +309,6 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             %   envType : environment name (as a string)
             %   items   : items, a Nx1 or Nx2 cell array containing the
             %             items to be set in the list
-            
             
             % Get number of columns
             numCols = size(items, 2);
@@ -297,7 +324,7 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
                     printFun = @(d, i) obj.WrtLn('\\item[%s] %s', d, i);
                     cellfun(printFun, items{:, 1}, items{:, 2});
                 otherwise
-                    error(['This method accepts only Nx1 or ' ...
+                    error(['This method accepts only Nx1 or ', ...
                         'Nx2 cell arrays!']);
             end
             
@@ -354,11 +381,11 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
                 case 5
                     depthName = 'subparagraph';
                 otherwise
-                    error('Invalid depth parameter');
+                    error('Invalid depth parameter!');
             end
             
             if ~addToToC
-                depthName = [depthName '*'];
+                depthName = [depthName, '*'];
             end
             
             obj.NewLn(2);
@@ -560,7 +587,7 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
     methods (Hidden)
         function Set.array_stretch(obj, val)
             % Configure the array stretch value in the document
-            % 
+            %
             % Inputs:
             %   val : array stretch in relative units (1.4 by default)
             
@@ -569,7 +596,7 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
         
         function Set.soft_tabs_length(obj, val)
             % Configure the soft tabs lengths
-            % 
+            %
             % Inputs:
             %   val : number of whitespaces in a tab (4 by default)
             
