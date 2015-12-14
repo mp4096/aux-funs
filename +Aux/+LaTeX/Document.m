@@ -24,6 +24,8 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
         indentDepth = 0;    % indent depth counter
         softTabsLen = 4;    % length of the soft tabs
         
+        eolChar;            % end of line characters ('lf' or 'crlf')
+        
         arrayStretch = 1.4; % default array stretch in the document
     end
     % =====================================================================
@@ -55,6 +57,9 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             [obj.fullPath, obj.filename, obj.location] = ...
                 Aux.FileHandling.FormatFilename(fullFilename, 'tex');
             
+            % Configure the end of line symbols (auto)
+            obj.Set('eol_char', 'auto');
+            
             % Set default fopen options
             if nargin == 1
                 % permissions:      'w' (create new or overwrite)
@@ -67,7 +72,7 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             end
             
             % Open the specified file
-            obj.OpenFile(fopenOptions{:})
+            obj.OpenFile(fopenOptions{:});
         end
         
         function delete(obj)
@@ -238,7 +243,7 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
                 num = 1;
             end
             
-            fprintf(obj.f, repmat('\r\n', 1, num));
+            fprintf(obj.f, repmat(obj.eolChar, 1, num));
         end
         
         function PutIndent(obj, num)
@@ -577,7 +582,7 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
                     obj.WrtNI(' ');
                     
                     if j == richTable.numCols
-                        printSpec = '%s \\\\\r\n';
+                        printSpec = ['%s \\\\', obj.eolChar];
                     else
                         printSpec = '%s & ';
                     end
@@ -647,6 +652,35 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             %   val : number of whitespaces in a tab (4 by default)
             
             obj.softTabsLen = val;
+        end
+        
+        function Set.eol_char(obj, val)
+            % Configure the end of line characters
+            %
+            % Available options:
+            %	'crlf' : DOS/Win-like carriage return and line feed
+            %   'lf'   : *nix-like line feed only
+            %   'auto' : auto select depending on the detected system
+            %   
+            % Inputs:
+            %   val : type of the line endings, {'crlf', 'lf', 'auto'}
+            
+            Aux.KeyValueUtils.CheckInvalidKey( ...
+                val, {'lf', 'crlf', 'auto'}, ...
+                'End of line symbols config:');
+            
+            switch val
+                case 'lf'
+                    obj.eolChar = sprintf('\n');
+                case 'crlf'
+                    obj.eolChar = sprintf('\r\n');
+                case 'auto'
+                    if ispc
+                        obj.eolChar = sprintf('\r\n');
+                    else
+                        obj.eolChar = sprintf('\n');
+                    end
+            end
         end
     end
     % =====================================================================

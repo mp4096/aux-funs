@@ -1,5 +1,4 @@
 function [ret, pos] = CheckString(stringToCheck, allowedValues)
-fun = @(x) strcmp(x, stringToCheck);
-pos = find(cellfun(fun, allowedValues));
+pos = find(strcmp(stringToCheck, allowedValues));
 ret = ~isempty(pos);
 end
