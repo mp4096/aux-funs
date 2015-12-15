@@ -175,16 +175,15 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             % See also: ISPC, WINOPEN, OPEN
             
             % Check the arguments. No forced open if no arguments
-            % specified. One actually has to store a non-empty char in
-            % 'force'. If an empty char is stored, the comparison below
-            % also returns an empty char which is not allowed for &&
+            % specified.
             if nargin == 1
-                force = ' ';
+                force = '';
             end
             
             % Check if opened and if forced, throw appropriate errors and
-            % warnings
-            if (force ~= 'f') && obj.IsOpened
+            % warnings. Please do not use '~=' instead of strcmp, this will
+            % lead to errors if 'force' is a string (not a single char).
+            if ~strcmp(force, 'f') && obj.IsOpened
                 error(['Cannot open the document outside MATLAB ', ...
                     'while it is still opened for writing!']);
             elseif obj.IsOpened
@@ -243,7 +242,7 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
                 num = 1;
             end
             
-            fprintf(obj.f, repmat(obj.eolChar, 1, num));
+            obj.WrtNI(repmat(obj.eolChar, 1, num));
         end
         
         function PutIndent(obj, num)
@@ -258,11 +257,14 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             end
             
             % Use soft tabs as configured
-            fprintf(obj.f, blanks(obj.softTabsLen*num));
+            obj.WrtNI(blanks(obj.softTabsLen*num));
         end
         
         function WrtNI(obj, varargin)
             % Write line without indent and without new line at the end
+            %
+            % This is the most low-level method, the only one using
+            % fprintf!
             %
             % Input:
             %   varargin : values that will be passed to the 'fprintf'
@@ -271,6 +273,24 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             % See also: FPRINTF, AUX.LATEX.LATEXDOCUMENT.WRT,
             %           AUX.LATEX.LATEXDOCUMENT.WRTLN
             
+            
+            % Check if the file is opened
+            if ~obj.IsOpened
+                error(['File ''%s'' is closed. ', ...
+                    'Please reopen it and try again.'], ...
+                    obj.filename);
+            end
+            
+            % Check if the permission is right
+            [~, permission, ~, ~] = fopen(obj.f);
+            
+            if strcmp(permission, {'r', 'rt'})
+                error(['File ''%s'' is open for reading-only. ', ...
+                    'Please reopen it for writing and try again.'], ...
+                    obj.filename);
+            end
+            
+            % Write to file
             fprintf(obj.f, varargin{:});
         end
         
@@ -643,8 +663,13 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             % Inputs:
             %   val : array stretch in relative units (1.4 by default)
             
-            assert(isfloat(val), ...
-                'Array stretch must be float, not %s.', class(val));
+            if ~isfloat(val)
+                error('Array stretch must be float, not %s.', class(val));
+            end
+            
+            if val <= 0
+                error('Array stretch must be greater than zero.');
+            end
             
             obj.arrayStretch = val;
         end
@@ -655,8 +680,14 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             % Inputs:
             %   val : number of whitespaces in a tab (4 by default)
             
-            assert(isinteger(val), ...
-                'Soft tabs length must be integer, not %s.', class(val));
+            if ~isinteger(val)
+                error('Soft tabs length must be integer, not %s.', ...
+                    class(val));
+            end
+            
+            if val < 0
+                error('Soft tabs length must be non-negative.');
+            end
             
             obj.softTabsLen = val;
         end
