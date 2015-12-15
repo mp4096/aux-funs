@@ -7,11 +7,8 @@ if ~Aux.KeyValueUtils.CheckString(key, allowedKeys)
     end
     
     s = [s, sprintf('Unknown key ''%s''. ', key)];
-    s = [s, sprintf('Following keys are allowed:\n')];
-    
-    printFun = @(x) sprintf('\t%s\n', x);
-    strAllowedKeys = cellfun(printFun, allowedKeys, 'UniformOutput', 0);
-    s = [s, strjoin(strAllowedKeys)];
+    s = [s, sprintf('Following keys are allowed:\n\t')];
+    s = [s, strjoin(sort(allowedKeys), '\n\t')];
     
     error('%s', s);
 end

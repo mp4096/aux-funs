@@ -56,9 +56,9 @@ classdef (Abstract) KeyValueMixin < handle
             % Print the allowed keys list if called without any arguments
             if numArgs == 0
                 fprintf('Set method for the class ''%s''. ', class(obj));
-                fprintf('Following keys are allowed:\n');
-                printFun = @(x) fprintf('\t''%s''\n', x);
-                cellfun(printFun, obj.allowedKeys);
+                fprintf('Following keys are allowed:\n\t');
+                fprintf(strjoin(obj.allowedKeys, '\n\t'));
+                fprintf('\n\n');
                 return
             end
             
