@@ -97,9 +97,16 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             %
             % See also: FOPEN
             
+            % Check if already opened
             if obj.fileOpened
                 % File already opened, do nothing and return
                 return
+            end
+            
+            % Check if the specified permission is read-only
+            if ~isempty(varargin) && any(strcmp(varargin{1}, {'r', 'rt'}))
+                error(['Invalid permission specification: ', ...
+                    'The file must be opened for writing.']);
             end
             
             % Open the document file with specified options
@@ -281,15 +288,6 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
                     obj.filename);
             end
             
-            % Check if the permission is right
-            [~, permission, ~, ~] = fopen(obj.f);
-            
-            if strcmp(permission, {'r', 'rt'})
-                error(['File ''%s'' is open for reading-only. ', ...
-                    'Please reopen it for writing and try again.'], ...
-                    obj.filename);
-            end
-            
             % Write to file
             fprintf(obj.f, varargin{:});
         end
@@ -364,6 +362,25 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
     % Public high-level writing methods
     % =====================================================================
     methods
+        function AddAndIndentText(obj, txt)
+            % Add a multi-line text with the current indent depth
+            %
+            % Input:
+            %   txt : a string containing multiple text lines
+            
+            % Split the string at line feeds, retain multiple line feeds
+            txtSplit = strsplit(txt, '\n', 'CollapseDelimiters', false);
+            
+            for i = 1 : 1 : length(txtSplit)
+                % Remove the last carriage return (if present)
+                txtSplit{i} = regexprep(txtSplit{i}, '\r$', '');
+                
+                % Write the line, the end of line symbols are consistent
+                % with the rest of the document.
+                obj.WrtLn(txtSplit{i});
+            end
+        end
+        
         function ListEnv(obj, envType, items)
             % List environment
             %
