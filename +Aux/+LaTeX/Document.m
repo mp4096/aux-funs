@@ -170,7 +170,7 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             % the file is closed in MATLAB and opened outside.
             %
             % Input
-            %   [force] : force open 
+            %   [force] : force open
             %
             % See also: ISPC, WINOPEN, OPEN
             
@@ -627,6 +627,7 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
         
         function ClearPage(obj)
             % Add a clear page command
+            
             obj.WrtLn('\\clearpage');
         end
     end
@@ -642,6 +643,9 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             % Inputs:
             %   val : array stretch in relative units (1.4 by default)
             
+            assert(isfloat(val), ...
+                'Array stretch must be float, not %s.', class(val));
+            
             obj.arrayStretch = val;
         end
         
@@ -650,6 +654,9 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             %
             % Inputs:
             %   val : number of whitespaces in a tab (4 by default)
+            
+            assert(isinteger(val), ...
+                'Soft tabs length must be integer, not %s.', class(val));
             
             obj.softTabsLen = val;
         end
@@ -661,7 +668,7 @@ classdef Document < Aux.KeyValueUtils.KeyValueMixin
             %	'crlf' : DOS/Win-like carriage return and line feed
             %   'lf'   : *nix-like line feed only
             %   'auto' : auto select depending on the detected system
-            %   
+            %
             % Inputs:
             %   val : type of the line endings, {'crlf', 'lf', 'auto'}
             
