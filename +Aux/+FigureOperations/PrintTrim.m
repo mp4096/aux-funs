@@ -7,35 +7,64 @@ function PrintTrim(h, filename, varargin)
 % [varargin] : optional arguments as key-value pairs
 %
 % See also: PRINT
+%
 
-keys = { ...
-    {'PrintType', 'Printing driver, {''png''} or ''pdf'''}, ...
-    {'DPI', 'Print resolution in dots per inch, {300}'}, ...
-    {'FigureWidth', 'Figure width in mm before trimming, {210}'}, ...
-    {'AspectRatio', 'Height to width ratio, {1}'}, ...
+
+% =========================================================================
+% Define optional keys, their default values and validation functions
+% =========================================================================
+% Key name -- Key description -- Default value -- Validation function
+keys(1, :) = { ...
+    'PrintType', ...
+    'Printing driver, {''png''} or ''pdf''', ...
+    'png', ...
+    @CheckPrintType, ...
     };
+
+allowedPrintTypes = {'png', 'pdf'};
+
+keys(2, :) = { ...
+    'DPI', ...
+    'Print resolution in dots per inch, {300}', ...
+    300, ...
+    @CheckDPI, ...
+    };
+
+keys(3, :) = { ...
+    'FigureWidth', ...
+    'Figure width in mm before trimming, {210}', ...
+    210, ...
+    @CheckFigureWidth, ...
+    };
+
+keys(4, :) = { ...
+    'AspectRatio', ...
+    'Height to width ratio, {1}', ...
+    1, ...
+    @CheckAspectRatio, ...
+    };
+% =========================================================================
+
+
+% =========================================================================
+% Create the input parser and parse optional inputs
+% =========================================================================
+p = inputParser;
+p.FunctionName = 'Aux.FigureOperations.PrintTrim';
+
+for k = keys'
+    p.addParameter(k{1}, k{3}, k{4});
+end
+
+p.parse(varargin{:});
+% =========================================================================
+
 
 % =========================================================================
 % Print info in the command window if called without input arguments
 % =========================================================================
 if nargin == 0
-    % If the function was called without any arguments, print a short
-    % key-value pairs summary.
-    help Aux.FigureOperations.PrintTrim
-    
-    fprintf('\tAllowed keys:\n')
-    % Fun to get length of the first entry
-    len1 = @(k) length(k{1});
-    % Fun to get maximum length of the first entries
-    maxLen1 = @(ks) max(cellfun(len1, ks));
-    % Calculate padding for each entry based on the maximum entry length
-    padWhitesp = @(k, ks) maxLen1(ks) + 3 - len1(k);
-    % Fun to print one key and its description
-    sngPrintFun = @(k, ks) ...
-        fprintf('\t''%s''%s: %s\n', k{1}, blanks(padWhitesp(k, ks)), k{2});
-    % Perform this printing for a cell array
-    cwPrintFun = @(ks) cellfun(@(x) sngPrintFun(x, ks), ks);
-    cwPrintFun(keys);
+    PrintHelp();
     return
 end
 % =========================================================================
@@ -65,85 +94,32 @@ end
 % Process the filename argument
 % =========================================================================
 % Remove extension
-filename = regexprep(filename, '.(png|pdf)$', '', 'preservecase');
-% =========================================================================
-
-
-% =========================================================================
-% Process the optional input arguments
-% =========================================================================
-% Check if the input keys are allowed
-allowedKeys = [keys{:}];
-allowedKeys = allowedKeys(1 : 2 : end);
-for i = 1 : 2 : length(varargin)
-    Aux.KeyValueUtils.CheckInvalidKey(varargin{i}, allowedKeys);
-end
-
-% Use standard values if not specified in varargin
-dpi = 300;
-printType = 'png';
-figureWidth = 210; % millimetres
-aspectRatio = 1;
-
-% Check and set print type
-[s, v] = Aux.KeyValueUtils.ExtractValue('PrintType', varargin{:});
-if s == 0
-    if ~ischar(v)
-        error(['Print type must be specified as a string, either ', ...
-            '''png'' or ''pdf''!']);
-    end
-    
-    Aux.KeyValueUtils.CheckInvalidKey( ...
-        v, {'png', 'pdf'}, 'Print type specification:');
-    printType = v;
-end
-
-% Check and set DPI
-[s, v] = Aux.KeyValueUtils.ExtractValue('DPI', varargin{:});
-if s == 0
-    if ~isnumeric(v)
-        error('DPI value must be specified as a numeric scalar!');
-    elseif v <= 0
-        error('DPI value must be strictly positive!');
-    end
-    
-    dpi = v(1);
-end
-
-% Check and set the figure width
-[s, v] = Aux.KeyValueUtils.ExtractValue('FigureWidth', varargin{:});
-if s == 0
-    if ~isnumeric(v)
-        error('DPI value must be specified as a numeric scalar!');
-    elseif v <= 0
-        error('DPI value must be strictly positive!');
-    end
-    
-    figureWidth = v;
-end
-
-[s, v] = Aux.KeyValueUtils.ExtractValue('AspectRatio', varargin{:});
-if s == 0
-    aspectRatio = v;
-end
+filename = regexprep(filename, '\.(png|pdf)$', '', 'preservecase');
 % =========================================================================
 
 
 % =========================================================================
 % Set printing properties
 % =========================================================================
+% Store parsing results
+dpi = p.Results.DPI;
+% `validatestring` required for partial specifications
+printType = validatestring(p.Results.PrintType, allowedPrintTypes);
+figureWidth = p.Results.FigureWidth; % millimetres
+aspectRatio = p.Results.AspectRatio;
+
 % Convert millimetres to centimetres
 figureWidth = figureWidth/10;
 
 % Set paper size and units
 set(h, 'PaperUnits', 'centimeters');
-set(h, 'PaperSize', [1 aspectRatio].*figureWidth);
-set(h, 'PaperPosition', [0 0 1 aspectRatio].*figureWidth);
+set(h, 'PaperSize', [1, aspectRatio].*figureWidth);
+set(h, 'PaperPosition', [0, 0, 1, aspectRatio].*figureWidth);
 % =========================================================================
 
 
 % =========================================================================
-% Print
+% Print figure
 % =========================================================================
 switch printType
     case 'pdf'
@@ -151,10 +127,63 @@ switch printType
         print(h, filename, '-dpdf');
         [~, ~] = dos( ...
             sprintf('pdfcrop -margins 0 %s %s', filename, filename));
+        
     case 'png'
         filename = [filename '.png'];
         print(h, filename, '-dpng', sprintf('-r%i', dpi));
         [~, ~] = dos(sprintf('mogrify -trim %s', filename));
 end
+% =========================================================================
+
+
+% =========================================================================
+% Helper functions
+% =========================================================================
+    function PrintHelp()
+        % Print help header
+        help Aux.FigureOperations.PrintTrim
+        
+        % Print allowed keys
+        fprintf('  Allowed keys:\n')
+        % Get maximum length of the first entries
+        maxKeyLen = max(cellfun('length', keys(:, 1)));
+        % Calculate padding for each entry based on the maximum length
+        padWs = @(k) blanks(maxKeyLen + 3 - length(k));
+        % Fun to print one key and its description
+        printFun = @(k, d) fprintf('\t''%s''%s: %s\n', k, padWs(k), d);
+        % Perform this printing for a cell array
+        cellfun(printFun, keys(:, 1), keys(:, 2));
+        
+        fprintf('\n')
+    end
+
+    function CheckPrintType(val)
+        validatestring(val, allowedPrintTypes, ...
+            'Aux.FigureOperations.PrintTrim', 'PrintType');
+    end
+
+    function CheckDPI(val)
+        if ~isnumeric(val)
+            error('DPI value must be specified as a numeric scalar!');
+        elseif val <= 0
+            error('DPI value must be strictly positive!');
+        end
+    end
+
+    function CheckFigureWidth(val)
+        if ~isnumeric(val)
+            error('Figure width must be specified as a numeric scalar!');
+        elseif val <= 0
+            error('Figure width must be strictly positive!');
+        end
+    end
+
+    function CheckAspectRatio(val)
+        if ~isnumeric(val)
+            error('Aspect ratio must be specified as a numeric scalar!');
+        elseif val <= 0
+            error('Aspect ratio must be strictly positive!');
+        end
+    end
 % =========================================================================
 end
