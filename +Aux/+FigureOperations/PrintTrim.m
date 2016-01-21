@@ -125,13 +125,13 @@ switch printType
     case 'pdf'
         filename = [filename '.pdf'];
         print(h, filename, '-dpdf');
-        [~, ~] = dos( ...
+        [~, ~] = system( ...
             sprintf('pdfcrop -margins 0 %s %s', filename, filename));
         
     case 'png'
         filename = [filename '.png'];
         print(h, filename, '-dpng', sprintf('-r%i', dpi));
-        [~, ~] = dos(sprintf('mogrify -trim %s', filename));
+        [~, ~] = system(sprintf('mogrify -trim %s', filename));
 end
 % =========================================================================
 
