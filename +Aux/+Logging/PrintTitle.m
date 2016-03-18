@@ -1,4 +1,4 @@
 function PrintTitle(titleString, level)
-    levelMark = ones(level, 1) * '#';
+    levelMark = ones(1, level) * '#';
     fprintf([levelMark, ' ', titleString, '\n']);
 end
