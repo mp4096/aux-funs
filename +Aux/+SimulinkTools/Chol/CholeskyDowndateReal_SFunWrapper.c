@@ -59,8 +59,14 @@ double euclidean_norm_real(mwIndex size, double *x);
 int sFunWrapper(double *Rnew, const mwSize *n, double *R, double *x)
 {
 	int status = 1;
-	status = cholesky_downdate_real(*n, R, x);
-	Rnew = R; 
+	
+	// Copy to memory allocated for output
+	memcpy(Rnew, R, (*n)*(*n)*sizeof(double));
+
+	// get status 
+	status = cholesky_downdate_real(*n, Rnew, x);
+
+	// return
 	return status;
 }
 

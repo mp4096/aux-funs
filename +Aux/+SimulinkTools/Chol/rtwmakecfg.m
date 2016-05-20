@@ -5,7 +5,7 @@ function makeInfo = rtwmakecfg()
 %   documentation for details on the format of this structure.
 %
 %   Simulink version    : 8.6 (R2015b) 13-Aug-2015
-%   MATLAB file generated on : 20-May-2016 19:51:00
+%   MATLAB file generated on : 20-May-2016 20:29:43
 
 % Verify the Simulink version
 verify_simulink_version();
@@ -302,6 +302,6 @@ info(1:1) = struct(...
 
 % Dependency info for S-function 'sfun_chol_downdate_real'
 info(1).SFunctionName = 'sfun_chol_downdate_real';
-info(1).SourceFiles = {'CholeskyDowndateReal.c'};
+info(1).SourceFiles = {'CholeskyDowndateReal_SFunWrapper.c'};
 info(1).Language = 'C';
 

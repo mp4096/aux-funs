@@ -4,7 +4,7 @@ def = legacy_code('initialize');
 def.Options.language = 'C';
 
 % Specify Source Files:
-def.SourceFiles = {'CholeskyDowndateReal.c'};
+def.SourceFiles = {'CholeskyDowndateReal_SFunWrapper.c'};
 
 % Specify Header Files:
 def.HeaderFiles = {'math.h','mex.h','matrix.h'};
