@@ -40,25 +40,24 @@
 * Compile this function by typing `mex CholeskyDowndateReal.c`
 */
 
-
+#include <stdlib.h> /* sqrt, fabs, hypot */
 #include <math.h> /* sqrt, fabs, hypot */
-#include "mex.h" /* MEX functions and types */
-#include "matrix.h" /* mwIndex, mwSize */
-
+#include <string.h>
+#include "CholeskyDowndateReal_SFunWrapper.h"
 
 /* Define functions */
 /* Rank-1 Cholesky downdate */
-int cholesky_downdate_real(const mwSize n, double *R, double *x);
+int cholesky_downdate_real(const unsigned int n, double *R, double *x);
 /* Dot product of two real vectors */
-double dot_product_real(mwIndex size, double *x, double *y);
+double dot_product_real(unsigned int size, double *x, double *y);
 /* Euclidean norm of a real vector */
-double euclidean_norm_real(mwIndex size, double *x);
+double euclidean_norm_real(unsigned int size, double *x);
 
 
 /* Entry point for sFunction */
-int sFunWrapper(double *Rnew, const mwSize *n, double *R, double *x)
+int sFunWrapper(double *Rnew, const unsigned int *n, double *R, double *x)
 {
-	int status = 1;
+	int status = 0;
 	
 	// Copy to memory allocated for output
 	memcpy(Rnew, R, (*n)*(*n)*sizeof(double));
@@ -70,7 +69,7 @@ int sFunWrapper(double *Rnew, const mwSize *n, double *R, double *x)
 	return status;
 }
 
-int cholesky_downdate_real(const mwSize n, double *R, double *x)
+int cholesky_downdate_real(const unsigned int n, double *R, double *x)
 {
     /*
     * This function returns:
@@ -89,12 +88,12 @@ int cholesky_downdate_real(const mwSize n, double *R, double *x)
     double scale, alpha, xx, t, a, b, norm;
 
     /* for-loop counters */
-    mwIndex i, j;
+    int i, j; // never use unsigned variables when counting backwards
 
 
     /* Allocate memory for the vectors with sines and cosines */
-    c = (double *) mxMalloc(n*sizeof(double));
-    s = (double *) mxMalloc(n*sizeof(double));
+    c = (double *) malloc(n*sizeof(double));
+    s = (double *) malloc(n*sizeof(double));
 
 
     /* Solve the system R^T*a = x, placing the result in the vector `s` */
@@ -155,8 +154,8 @@ int cholesky_downdate_real(const mwSize n, double *R, double *x)
 
 
     /* Free memory */
-    mxFree(c);
-    mxFree(s);
+    free(c);
+    free(s);
 
 
     /* Everything OK */
@@ -164,12 +163,12 @@ int cholesky_downdate_real(const mwSize n, double *R, double *x)
 }
 
 
-double dot_product_real(const mwIndex size, double *x, double *y)
+double dot_product_real(const unsigned int size, double *x, double *y)
 {
     /* Initialise return value for the dot product */
     double res = 0.0;
     /* for-loop counter */
-    mwIndex i;
+    int i; // never use unsigned variables when counting backwards
 
     for (i = 0; i < size; ++i)
     {
@@ -180,12 +179,12 @@ double dot_product_real(const mwIndex size, double *x, double *y)
 }
 
 
-double euclidean_norm_real(mwIndex size, double *x)
+double euclidean_norm_real(unsigned int size, double *x)
 {
     /* Intermediate variables for the numerical black magic */
     double scale, ssq, abs_curr_x;
     /* for-loop counter */
-    mwIndex i;
+    int i; // never use unsigned variables when counting backwards
 
 
     /* Handle trivial cases */

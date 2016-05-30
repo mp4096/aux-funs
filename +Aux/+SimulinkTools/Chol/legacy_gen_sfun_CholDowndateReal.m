@@ -1,13 +1,15 @@
 %% Integrate Existing C Function into Simulink Model with the Legacy Code Tool
+clear mex;
+
 % Create a Legacy Code Tool data structure 
 def = legacy_code('initialize');
 def.Options.language = 'C';
 
 % Specify Source Files:
-def.SourceFiles = {'CholeskyDowndateReal_SFunWrapper.c'};
+def.SourceFiles = {'CholeskyDowndateReal_SFunWrapper_Static.c'};
 
 % Specify Header Files:
-def.HeaderFiles = {'math.h','mex.h','matrix.h'};
+def.HeaderFiles = {'math.h', 'stdlib.h', 'string.h', 'CholeskyDowndateReal_SFunWrapper.h'};
 
 % Specify information about S-function
 def.SFunctionName = 'sfun_chol_downdate_real';
